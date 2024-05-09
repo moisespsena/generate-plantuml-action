@@ -67,6 +67,7 @@ jobs:
 *env*
 
 - `GITHUB_TOKEN` : *required* GitHub Token of your repository to commit svg files.
+- `IMAGE_TYPE` : *optional* Output image type. Available types: `svg`, `png`. Default value is `svg`.
 
 ## Demo
 

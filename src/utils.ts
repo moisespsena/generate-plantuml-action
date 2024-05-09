@@ -1,6 +1,7 @@
 import fs from 'fs';
-import { uniq } from 'lodash';
+import {uniq} from 'lodash';
 import path from 'path';
+
 const markdownit = require('markdown-it');
 const umlFileExtensions = [
     '.pu',
@@ -27,7 +28,8 @@ export function retrieveCodes(files) {
                 name: p.name,
                 // TODO: files may have been deleted.
                 code: fs.readFileSync(f).toString(),
-                dir: p.dir
+                dir: p.dir,
+                imageType: ''
             });
         }
         if (markdownExtensions.indexOf(p.ext) !== -1) {
@@ -45,7 +47,7 @@ export function retrieveCodes(files) {
     }, []);
 }
 
-const infoRegexp = /^plantuml(?:@(.+))?:([\w-_.]+)/;
+const infoRegexp = /^plantuml(?:@(.+))?:([\w-_.]+)(\.(svg|png))?/;
 
 function puFromMd(markdown) {
     const md = new markdownit();
@@ -54,7 +56,7 @@ function puFromMd(markdown) {
         .filter(token => infoRegexp.test(token.info));
 
     return fences.reduce((accum, fence) => {
-        const [, umlType, name] = fence.info.match(infoRegexp) || [];
+        const [, umlType, name, _, imageType] = fence.info.match(infoRegexp) || [];
         const [, typeInContent] = fence.content.match(/^(@start\w+)/) || [];
 
         if (!name) {
@@ -69,6 +71,7 @@ function puFromMd(markdown) {
         const t = umlType || 'uml';
         return accum.concat({
             name,
+            imageType: imageType,
             code: [
                 `@start${t}`,
                 fence.content.trim(),

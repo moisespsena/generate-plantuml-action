@@ -1,17 +1,17 @@
 // TODO logging.
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import {Base64} from 'js-base64';
+import {getCommitsFromPayload, retrieveCodes, updatedFiles} from './utils';
+
 const axios = require('axios');
-import { Base64 } from 'js-base64';
 const path = require('path');
 const plantumlEncoder = require('plantuml-encoder');
 
-import { retrieveCodes, getCommitsFromPayload, updatedFiles } from './utils';
-
-async function generateSvg(code) {
+async function generateImage(imageType, code) {
     const encoded = plantumlEncoder.encode(code);
     try {
-        const res = await axios.get(`http://www.plantuml.com/plantuml/svg/${encoded}`);
+        const res = await axios.get(`http://www.plantuml.com/plantuml/${imageType}/${encoded}`);
         return res.data;
     } catch(e) {
         // TODO
@@ -25,7 +25,9 @@ if (!process.env.GITHUB_TOKEN) {
     core.setFailed('Please set GITHUB_TOKEN env var.');
     process.exit(1);
 }
+
 const octokit = new github.GitHub(process.env.GITHUB_TOKEN);
+const imageType = process.env.IMAGE_TYPE || "svg";
 
 (async function main() {
     const payload = github.context.payload;
@@ -42,13 +44,14 @@ const octokit = new github.GitHub(process.env.GITHUB_TOKEN);
 
     let tree: any[] = [];
     for (const plantumlCode of plantumlCodes) {
+        const imgType = (plantumlCode.imageType || imageType)
         const p = path.format({
             dir: (diagramPath === '.') ? plantumlCode.dir : diagramPath,
             name: plantumlCode.name,
-            ext: '.svg'
+            ext: '.' + imgType
         });
 
-        const svg = await generateSvg(plantumlCode.code);
+        const svg = await generateImage(imgType, plantumlCode.code);
         const blobRes = await octokit.git.createBlob({
             owner, repo,
             content: Base64.encode(svg),

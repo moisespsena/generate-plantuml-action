@@ -1,7 +1,7 @@
 # Examples
 
 Set `plantuml:{filename}` as a fence information. `filename` is used as the file name of generated diagrams. In the following case, `md-sample-sequence.svg` is created.
-`filename` is required.
+`filename` is required. If `filename` haves extension (`.svg`, or `.png`), generates a file type by extension.
 
 ```plantuml:md-sample-sequence
 @startuml
@@ -20,6 +20,17 @@ Foo1 -> Foo6 : To collections
 ```
 
 ![](./md-sample-sequence.svg)
+
+
+Example PNG image.
+
+```plantuml:md-sample-class-png.png
+@startuml
+class Test
+@enduml
+```
+
+![](./md-sample-class-png.png)
 
 `@startuml` can be omitted. This action complements `@startuml` and `@enduml`.
 
