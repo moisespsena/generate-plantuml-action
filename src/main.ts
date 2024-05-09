@@ -10,8 +10,10 @@ const plantumlEncoder = require('plantuml-encoder');
 
 async function generateImage(imageType, code) {
     const encoded = plantumlEncoder.encode(code);
+    const url = `http://www.plantuml.com/plantuml/${imageType}/${encoded}`;
+    console.log(">", url);
     try {
-        const res = await axios.get(`http://www.plantuml.com/plantuml/${imageType}/${encoded}`);
+        const res = await axios.get(url);
         return res.data;
     } catch(e) {
         // TODO
@@ -51,10 +53,10 @@ const imageType = process.env.IMAGE_TYPE || "svg";
             ext: '.' + imgType
         });
 
-        const svg = await generateImage(imgType, plantumlCode.code);
+        const img = await generateImage(imgType, plantumlCode.code);
         const blobRes = await octokit.git.createBlob({
             owner, repo,
-            content: Base64.encode(svg),
+            content: Base64.encode(img),
             encoding: 'base64',
         });
 
