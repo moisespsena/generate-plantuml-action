@@ -3,6 +3,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import {Base64} from 'js-base64';
 import {getCommitsFromPayload, retrieveCodes, updatedFiles} from './utils';
+import {writeFileSync} from 'fs';
 
 const axios = require('axios');
 const path = require('path');
@@ -11,9 +12,12 @@ const plantumlEncoder = require('plantuml-encoder');
 async function generateImage(imageType, code) {
     const encoded = plantumlEncoder.encode(code);
     const url = `http://www.plantuml.com/plantuml/${imageType}/${encoded}`;
-    console.log(">", url);
+    let config = {};
+    if (imageType == 'png') {
+        config = {responseType: 'arraybuffer'};
+    }
     try {
-        const res = await axios.get(url);
+        const res = await axios.get(url, config);
         return res.data;
     } catch(e) {
         // TODO
@@ -46,32 +50,29 @@ const imageType = process.env.IMAGE_TYPE || "svg";
 
     let tree: any[] = [];
     for (const plantumlCode of plantumlCodes) {
-        const imgType = (plantumlCode.imageType || imageType)
+
+        const imgTypeM = plantumlCode.name.match(/.+\.(png|svg)$/i)
+        let imgType = imageType
+        if (imgTypeM) {
+            if (imgTypeM[1]) {
+                imgType = imgTypeM[1].toLowerCase()
+                plantumlCode.name = plantumlCode.name.replace(/\.(png|svg)$/i, '')
+            }
+        }
+
+
+        console.log(`imgType:  ${imgType}, ${plantumlCode.name}`)
         const p = path.format({
             dir: (diagramPath === '.') ? plantumlCode.dir : diagramPath,
             name: plantumlCode.name,
             ext: '.' + imgType
         });
 
-        const img = await generateImage(imgType, plantumlCode.code);
-        const blobRes = await octokit.git.createBlob({
-            owner, repo,
-            content: Base64.encode(img),
-            encoding: 'base64',
-        });
+        let img = await generateImage(imgType, plantumlCode.code);
 
-        const sha = await octokit.repos.getContents({
-            owner, repo, ref, path: p
-        }).then(res => (<any>res.data).sha).catch(e => undefined);
+        writeFileSync(p, img)
 
-        if (blobRes.data.sha !== sha) {
-            tree = tree.concat({
-                path: p.toString(),
-                mode: "100644",
-                type: "blob",
-                sha: blobRes.data.sha
-            })
-        }
+        tree.push(p)
     }
 
     if (tree.length === 0) {
@@ -79,25 +80,7 @@ const imageType = process.env.IMAGE_TYPE || "svg";
         return;
     }
 
-    const treeRes = await octokit.git.createTree({
-        owner, repo, tree,
-        base_tree: commits[commits.length - 1].commit.tree.sha,
-    });
-
-    const createdCommitRes = await octokit.git.createCommit({
-        owner, repo,
-        message: commitMessage,
-        parents: [ commits[commits.length - 1].sha ],
-        tree: treeRes.data.sha,
-    });
-
-    const updatedRefRes = await octokit.git.updateRef({
-        owner, repo,
-        ref: ref.replace(/^refs\//, ''),
-        sha: createdCommitRes.data.sha,
-    });
-
-    console.log(`${tree.map(t => t.path).join("\n")}\nAbove files are generated.`);
+    console.log(`${tree.map(t => t).join("\n")}\nAbove files are generated.`);
 })().catch(e => {
     core.setFailed(e);
 });

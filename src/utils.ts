@@ -47,7 +47,7 @@ export function retrieveCodes(files) {
     }, []);
 }
 
-const infoRegexp = /^plantuml(?:@(.+))?:([\w-_.]+)(\.(svg|png))?/;
+const infoRegexp = /^plantuml(?:@(.+))?:([\w-_.]+)/;
 
 function puFromMd(markdown) {
     const md = new markdownit();
@@ -56,12 +56,13 @@ function puFromMd(markdown) {
         .filter(token => infoRegexp.test(token.info));
 
     return fences.reduce((accum, fence) => {
-        const [, umlType, name, _, imageType] = fence.info.match(infoRegexp) || [];
+        let [, umlType, name] = fence.info.match(infoRegexp) || [];
         const [, typeInContent] = fence.content.match(/^(@start\w+)/) || [];
 
         if (!name) {
             return accum;
         }
+
         if (typeInContent) {
             return accum.concat({
                 name,
@@ -71,7 +72,6 @@ function puFromMd(markdown) {
         const t = umlType || 'uml';
         return accum.concat({
             name,
-            imageType: imageType,
             code: [
                 `@start${t}`,
                 fence.content.trim(),
