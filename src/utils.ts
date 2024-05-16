@@ -38,7 +38,7 @@ export function retrieveCodes(files) {
             const dir = path.dirname(f);
             const codes = puFromMd(content);
             codes.forEach(code => {
-                code.dir = path.dirname(f)
+                code.dir = dir
                 return code;
             })
             return accum.concat(codes);
@@ -47,7 +47,7 @@ export function retrieveCodes(files) {
     }, []);
 }
 
-const infoRegexp = /^plantuml(?:@(.+))?:([\w-_.]+)/;
+const infoRegexp = /^(\[.+\])?plantuml(?:@(.+))?:([\w-_.]+)/;
 
 function puFromMd(markdown) {
     const md = new markdownit();

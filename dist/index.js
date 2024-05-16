@@ -32511,7 +32511,7 @@ function retrieveCodes(files) {
             const dir = path_1.default.dirname(f);
             const codes = puFromMd(content);
             codes.forEach(code => {
-                code.dir = path_1.default.dirname(f);
+                code.dir = dir;
                 return code;
             });
             return accum.concat(codes);
@@ -32520,7 +32520,7 @@ function retrieveCodes(files) {
     }, []);
 }
 exports.retrieveCodes = retrieveCodes;
-const infoRegexp = /^plantuml(?:@(.+))?:([\w-_.]+)/;
+const infoRegexp = /^(\[.+\])?plantuml(?:@(.+))?:([\w-_.]+)/;
 function puFromMd(markdown) {
     const md = new markdownit();
     const fences = md.parse(markdown, {})
